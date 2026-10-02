@@ -37,6 +37,8 @@ FILTER_NAMES = [
     "SEPIA RETRO",
     "INVERT (X-RAY)"
 ]
+current_filter_idx = 0
+
 # --- DAFTAR MODE LENSA PORTAL ---
 MODES = [
     "2D (4 Titik Persegi Panjang)",
