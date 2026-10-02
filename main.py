@@ -52,13 +52,8 @@ last_mode_toggle_time = 0.0
 last_sound_play_time = 0.0
 is_fist_prev = False
 
-# Toast Notifikasi
-toast_message = ""
-toast_timer = 0.0
-
-
 # =====================================================================
-# 1. HELPER: WARNA PELANGI DINAMIS & TOAST
+# 1. HELPER: WARNA PELANGI DINAMIS & SUARA
 # =====================================================================
 def get_rainbow_color(speed=90.0, offset=0.0):
     """Menghasilkan warna BGR pelangi dinamis."""
@@ -66,13 +61,6 @@ def get_rainbow_color(speed=90.0, offset=0.0):
     hsv_pixel = np.uint8([[[hue, 255, 255]]])
     bgr_pixel = cv2.cvtColor(hsv_pixel, cv2.COLOR_HSV2BGR)[0][0]
     return (int(bgr_pixel[0]), int(bgr_pixel[1]), int(bgr_pixel[2]))
-
-
-def set_toast(msg, duration=1.8):
-    """Menampilkan pop-up notifikasi di layar."""
-    global toast_message, toast_timer
-    toast_message = msg
-    toast_timer = time.time() + duration
 
 
 def play_lawan_sound():
@@ -159,41 +147,6 @@ def check_double_ok_gesture(h1, h2, w, h):
     dist_touch = math.hypot(center1[0] - center2[0], center1[1] - center2[1])
     is_touching = (dist_touch < 75)
     return (is_ok1 and is_ok2 and is_touching), center1, center2
-
-
-# =====================================================================
-# 3. HELPER: MENGGAMBAR SKELETON EMAS TANGAN (GOLDEN SKELETON)
-# =====================================================================
-HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4),        # Jempol
-    (0, 5), (5, 6), (6, 7), (7, 8),        # Telunjuk
-    (5, 9), (9, 10), (10, 11), (11, 12),   # Tengah
-    (9, 13), (13, 14), (14, 15), (15, 16), # Manis
-    (13, 17), (17, 18), (18, 19), (19, 20),# Kelingking
-    (0, 17)                                # Telapak
-]
-
-def draw_golden_hand_landmarks(frame, hand_lm, w, h):
-    """Menggambar skeleton tangan berwarna emas elegan persis seperti di video."""
-    gold_color = (10, 220, 255)   # Kuning Emas BGR
-    white_core = (255, 255, 255)
-    
-    pts = [(int(lm.x * w), int(lm.y * h)) for lm in hand_lm]
-
-    # Garis penghubung sendi
-    for start_idx, end_idx in HAND_CONNECTIONS:
-        cv2.line(frame, pts[start_idx], pts[end_idx], gold_color, 2, cv2.LINE_AA)
-
-    # Titik sendi & ujung jari
-    for i, pt in enumerate(pts):
-        if i in [4, 8, 12, 16, 20]:
-            # Ujung jari: Lingkaran lebih besar bercahaya
-            cv2.circle(frame, pt, 7, gold_color, -1, cv2.LINE_AA)
-            cv2.circle(frame, pt, 4, white_core, -1, cv2.LINE_AA)
-            cv2.circle(frame, pt, 9, (255, 255, 255), 1, cv2.LINE_AA)
-        else:
-            cv2.circle(frame, pt, 4, gold_color, -1, cv2.LINE_AA)
-            cv2.circle(frame, pt, 2, white_core, -1, cv2.LINE_AA)
 
 
 # =====================================================================
@@ -428,19 +381,6 @@ def draw_tiktok_retrolens_header(frame, mode_text, filter_name, fps):
     cv2.putText(frame, filter_line, (22, 66), cv2.FONT_HERSHEY_DUPLEX, 0.58, (0, 0, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, filter_line, (20, 64), cv2.FONT_HERSHEY_DUPLEX, 0.58, white_color, 1, cv2.LINE_AA)
 
-    # Toast Notifikasi di Bagian Tengah Bawah
-    global toast_message, toast_timer
-    if time.time() < toast_timer and toast_message:
-        tw = 480
-        tx = (w - tw) // 2
-        ty = h - 65
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (tx, ty), (tx + tw, ty + 36), (20, 20, 25), -1)
-        cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
-        cv2.rectangle(frame, (tx, ty), (tx + tw, ty + 36), (0, 220, 255), 1, cv2.LINE_AA)
-        cv2.putText(frame, toast_message, (tx + 15, ty + 24),
-                    cv2.FONT_HERSHEY_DUPLEX, 0.44, (0, 240, 255), 1, cv2.LINE_AA)
-
 
 # =====================================================================
 # 6. MAIN APPLICATION LOOP
@@ -477,8 +417,6 @@ def main():
     print("    • Fist Mode: Kepalkan SATU Tangan (👊) -> Layar Merah + lawan.wav.")
     print("    • Tombol 'q' / ESC untuk Keluar.")
     print("=" * 70 + "\n")
-
-    set_toast("Siap! Gunakan 'm'/'c' untuk ganti Mode 2D/3D ✨", 3.0)
 
     fist_streak_single = 0
     fist_streak_double = 0
@@ -543,7 +481,6 @@ def main():
             if curr_time - last_mode_toggle_time > 0.85:
                 last_mode_toggle_time = curr_time
                 current_mode_idx = (current_mode_idx + 1) % len(MODES)
-                set_toast(f"🔄 MODE BERUBAH: {MODES[current_mode_idx]} ✨", 2.2)
 
         # =============================================================
         # 2. KONDISI: SATU TANGAN MENGEPAL (FIST 👊) -> LAYAR MERAH + SUARA
@@ -553,7 +490,6 @@ def main():
             if fist_streak_single >= 2:
                 if not is_fist_prev:
                     play_lawan_sound()
-                    set_toast("👊 FIST / RAGE MODE AKTIF!", 1.5)
                 is_fist_prev = True
 
                 # Layar Merah Membara
@@ -600,16 +536,9 @@ def main():
                 if curr_time - last_gesture_switch_time > 0.8:
                     last_gesture_switch_time = curr_time
                     current_filter_idx = (current_filter_idx + 1) % len(FILTER_NAMES)
-                    set_toast(f"✨ FILTER: {FILTER_NAMES[current_filter_idx]}", 1.8)
 
             # =========================================================
-            # 4. GAMBAR SKELETON EMAS PADA SEMUA TANGAN
-            # =========================================================
-            for lm in hand_lm_list:
-                draw_golden_hand_landmarks(frame, lm, w, h)
-
-            # =========================================================
-            # 5. PEMBUATAN PORTAL LENSA RETROLENS (MODE 1: 2D vs MODE 2: 3D)
+            # 4. PEMBUATAN PORTAL LENSA RETROLENS (MODE 1: 2D vs MODE 2: 3D)
             # =========================================================
             is_3d_mode = ("3D" in MODES[current_mode_idx])
             portal_points = []
@@ -721,17 +650,13 @@ def main():
             break
         elif key == ord('m') or key == ord('M') or key == ord('c') or key == ord('C'):
             current_mode_idx = (current_mode_idx + 1) % len(MODES)
-            set_toast(f"Mode: {MODES[current_mode_idx]}")
         elif key == ord('n') or key == ord('N') or key == ord(' ') or key == 9:
             current_filter_idx = (current_filter_idx + 1) % len(FILTER_NAMES)
-            set_toast(f"Filter: {FILTER_NAMES[current_filter_idx]}")
         elif key == ord('p') or key == ord('P'):
             current_filter_idx = (current_filter_idx - 1) % len(FILTER_NAMES)
-            set_toast(f"Filter: {FILTER_NAMES[current_filter_idx]}")
         elif ord('0') <= key <= ord('9'):
             idx = (key - ord('1')) % 10
             current_filter_idx = idx
-            set_toast(f"Filter: {FILTER_NAMES[current_filter_idx]}")
 
     cap.release()
     cv2.destroyAllWindows()
