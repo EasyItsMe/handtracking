@@ -37,10 +37,12 @@ FILTER_NAMES = [
     "SEPIA RETRO",
     "INVERT (X-RAY)"
 ]
-current_filter_idx = 0
-
-# Mode Lensa: "3D" (Full 5 Jari) atau "2D" (Jempol & Telunjuk)
-current_mode = "3D"
+# --- DAFTAR MODE LENSA PORTAL ---
+MODES = [
+    "2D (4 Titik Persegi Panjang)",
+    "3D (Prisma 5 Jari)"
+]
+current_mode_idx = 0
 
 # Timer & Cooldown Gestur
 last_gesture_switch_time = 0.0
@@ -401,7 +403,7 @@ def apply_retro_filter(frame_roi, mode_idx, rainbow_bgr, t_sec):
 def draw_tiktok_retrolens_header(frame, mode_text, filter_name, fps):
     """
     Menggambar header teks di sudut kiri atas persis tampilan video TikTok:
-      MODE: 3D (Full 5 Jari) [Tekan 'c' / Kepal 2 Tangan]
+      MODE: 2D (4 Titik Persegi Panjang) / 3D (Prisma 5 Jari) [Tekan 'm'/'c' / Kepal 2 Tangan]
       FILTER: <NAME> [Sentuh Jempol-Kelingking / 'n' / 'p']
     """
     h, w, _ = frame.shape
@@ -411,12 +413,12 @@ def draw_tiktok_retrolens_header(frame, mode_text, filter_name, fps):
     # Warna Putih Terang untuk FILTER (persis screenshot)
     white_color = (255, 255, 255)
 
-    mode_line = f"MODE: {mode_text} [Tekan 'c' / Kepal 2 Tangan]"
+    mode_line = f"MODE: {mode_text} [Tekan 'm'/'c' / Kepal 2 Tangan]"
     filter_line = f"FILTER: {filter_name} [Sentuh Jempol-Kelingking / 'n' / 'p']"
 
     # Bayangan teks (drop shadow hitam) untuk kontras tinggi di latar apapun
-    cv2.putText(frame, mode_line, (22, 36), cv2.FONT_HERSHEY_DUPLEX, 0.62, (0, 0, 0), 3, cv2.LINE_AA)
-    cv2.putText(frame, mode_line, (20, 34), cv2.FONT_HERSHEY_DUPLEX, 0.62, yellow_color, 1, cv2.LINE_AA)
+    cv2.putText(frame, mode_line, (22, 36), cv2.FONT_HERSHEY_DUPLEX, 0.60, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(frame, mode_line, (20, 34), cv2.FONT_HERSHEY_DUPLEX, 0.60, yellow_color, 1, cv2.LINE_AA)
 
     cv2.putText(frame, filter_line, (22, 66), cv2.FONT_HERSHEY_DUPLEX, 0.58, (0, 0, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, filter_line, (20, 64), cv2.FONT_HERSHEY_DUPLEX, 0.58, white_color, 1, cv2.LINE_AA)
@@ -424,7 +426,7 @@ def draw_tiktok_retrolens_header(frame, mode_text, filter_name, fps):
     # Toast Notifikasi di Bagian Tengah Bawah
     global toast_message, toast_timer
     if time.time() < toast_timer and toast_message:
-        tw = 460
+        tw = 480
         tx = (w - tw) // 2
         ty = h - 65
         overlay = frame.copy()
@@ -439,7 +441,7 @@ def draw_tiktok_retrolens_header(frame, mode_text, filter_name, fps):
 # 6. MAIN APPLICATION LOOP
 # =====================================================================
 def main():
-    global current_filter_idx, current_mode, last_gesture_switch_time
+    global current_filter_idx, current_mode_idx, last_gesture_switch_time
     global last_mode_toggle_time, is_fist_prev
 
     # MediaPipe Hands (Ultra Fast & Smooth)
@@ -461,15 +463,17 @@ def main():
     print("\n" + "=" * 70)
     print("  RETROLENS: AR HAND TRACKING FILTER PORTAL")
     print("  --------------------------------------------------")
-    print("  KONTROL & GESTUR TIKTOK:")
-    print("    • Mode 3D (Full 5 Jari): Rentangkan kedua tangan menghadap kamera.")
-    print("    • Ganti Mode: Tekan 'c' / Kepalkan KEDUA Tangan bersamaan.")
+    print("  2 PILIHAN MODE PORTAL:")
+    print("    1. MODE 2D (4 Titik): Persegi panjang bersih (Jempol & Telunjuk).")
+    print("    2. MODE 3D (Prisma 5 Jari): Wireframe kristal 3D berkedalaman.")
+    print("  KONTROL & GESTUR:")
+    print("    • Ganti Mode: Tekan 'm' atau 'c' / Kepalkan KEDUA Tangan bersamaan.")
     print("    • Ganti Filter: Sentuh Jempol-Kelingking (🤙) / OK Sign (👌👌) / 'n' / 'p'.")
     print("    • Fist Mode: Kepalkan SATU Tangan (👊) -> Layar Merah + lawan.wav.")
     print("    • Tombol 'q' / ESC untuk Keluar.")
     print("=" * 70 + "\n")
 
-    set_toast("Siap! Rentangkan 2 tangan untuk Portal 3D ✨", 3.0)
+    set_toast("Siap! Gunakan 'm'/'c' untuk ganti Mode 2D/3D ✨", 3.0)
 
     fist_streak_single = 0
     fist_streak_double = 0
@@ -518,19 +522,16 @@ def main():
             fist_streak_double = 0
 
         # =============================================================
-        # 1. KONDISI: KEPAL KEDUA TANGAN (TOGGLE MODE 3D / 2D) - Butuh 3 frame berturut-turut
+        # 1. KONDISI: KEPAL KEDUA TANGAN (TOGGLE MODE 2D / 3D)
         # =============================================================
         if fist_streak_double >= 3:
             if curr_time - last_mode_toggle_time > 1.2:
                 last_mode_toggle_time = curr_time
-                if current_mode == "3D (Full 5 Jari)":
-                    current_mode = "2D (Jempol-Telunjuk)"
-                else:
-                    current_mode = "3D (Full 5 Jari)"
-                set_toast(f"MODE BERUBAH: {current_mode} 🔄", 1.8)
+                current_mode_idx = (current_mode_idx + 1) % len(MODES)
+                set_toast(f"🔄 MODE: {MODES[current_mode_idx]}", 1.8)
 
         # =============================================================
-        # 2. KONDISI: SATU TANGAN MENGEPAL (FIST 👊) - Butuh 3 frame berturut-turut
+        # 2. KONDISI: SATU TANGAN MENGEPAL (FIST 👊) -> LAYAR MERAH + SUARA
         # =============================================================
         elif fist_streak_single >= 3:
             if not is_fist_prev:
@@ -591,8 +592,9 @@ def main():
                 draw_golden_hand_landmarks(frame, lm, w, h)
 
             # =========================================================
-            # 5. PEMBUATAN PORTAL LENSA RETROLENS (3D / 2D)
+            # 5. PEMBUATAN PORTAL LENSA RETROLENS (MODE 1: 2D vs MODE 2: 3D)
             # =========================================================
+            is_3d_mode = ("3D" in MODES[current_mode_idx])
             portal_points = []
             h1_tips = []
             h2_tips = []
@@ -603,22 +605,37 @@ def main():
                 h1 = hand_lm_list[0]
                 h2 = hand_lm_list[1]
 
-                # Ujung jari: Jempol(4), Telunjuk(8), Tengah(12), Manis(16), Kelingking(20)
-                tip_indices = [4, 8, 12, 16, 20] if "3D" in current_mode else [4, 8]
-
-                h1_tips = [(int(h1[idx].x * w), int(h1[idx].y * h)) for idx in tip_indices]
-                h2_tips = [(int(h2[idx].x * w), int(h2[idx].y * h)) for idx in tip_indices]
-                h1_z = [h1[idx].z for idx in tip_indices]
-                h2_z = [h2[idx].z for idx in tip_indices]
-
-                portal_points = h1_tips + h2_tips
+                if is_3d_mode:
+                    # MODE 2: 3D PRISMA (10 UJUNG JARI KEDUA TANGAN)
+                    tip_indices = [4, 8, 12, 16, 20]
+                    h1_tips = [(int(h1[idx].x * w), int(h1[idx].y * h)) for idx in tip_indices]
+                    h2_tips = [(int(h2[idx].x * w), int(h2[idx].y * h)) for idx in tip_indices]
+                    h1_z = [h1[idx].z for idx in tip_indices]
+                    h2_z = [h2[idx].z for idx in tip_indices]
+                    portal_points = h1_tips + h2_tips
+                else:
+                    # MODE 1: 2D PERSEGI PANJANG (4 TITIK: JEMPOL & TELUNJUK)
+                    h1_thumb = (int(h1[4].x * w), int(h1[4].y * h))
+                    h1_index = (int(h1[8].x * w), int(h1[8].y * h))
+                    h2_index = (int(h2[8].x * w), int(h2[8].y * h))
+                    h2_thumb = (int(h2[4].x * w), int(h2[4].y * h))
+                    portal_points = [h1_thumb, h1_index, h2_index, h2_thumb]
 
             elif len(hand_lm_list) == 1:
-                # Jika 1 tangan terbuka lebar 5 jari
+                # Jika 1 tangan
                 h1 = hand_lm_list[0]
-                tip_indices = [4, 8, 12, 16, 20]
-                portal_points = [(int(h1[idx].x * w), int(h1[idx].y * h)) for idx in tip_indices]
-                portal_points.append((int(h1[0].x * w), int(h1[0].y * h)))  # Tambah pergelangan
+                if is_3d_mode:
+                    tip_indices = [4, 8, 12, 16, 20]
+                    portal_points = [(int(h1[idx].x * w), int(h1[idx].y * h)) for idx in tip_indices]
+                    portal_points.append((int(h1[0].x * w), int(h1[0].y * h)))  # Pergelangan
+                else:
+                    # 4 Titik pada 1 tangan (Jempol, Telunjuk, Kelingking, Pergelangan)
+                    portal_points = [
+                        (int(h1[4].x * w), int(h1[4].y * h)),
+                        (int(h1[8].x * w), int(h1[8].y * h)),
+                        (int(h1[20].x * w), int(h1[20].y * h)),
+                        (int(h1[0].x * w), int(h1[0].y * h))
+                    ]
 
             # Render Filter ke dalam Lensa Polygon Convex Hull
             if len(portal_points) >= 3:
@@ -638,8 +655,8 @@ def main():
                         roi_frame = frame[ry:ry + rh, rx:rx + rw]
                         roi_filtered = apply_retro_filter(roi_frame, current_filter_idx, rainbow_color, curr_time)
 
-                        # Efek Pencahayaan Kedalaman 3D Vertikal (Atas Cyan, Bawah Magenta Lantai)
-                        if "3D" in current_mode:
+                        # Efek Pencahayaan Kedalaman 3D Vertikal (Khusus Mode 3D)
+                        if is_3d_mode:
                             grad_y = np.linspace(0.0, 1.0, rh, dtype=np.float32).reshape(rh, 1)
                             b_col = ((1.0 - grad_y) * 230 + grad_y * 200).astype(np.uint8)
                             g_col = ((1.0 - grad_y) * 210 + grad_y * 30).astype(np.uint8)
@@ -662,18 +679,21 @@ def main():
                         fg_roi = cv2.bitwise_and(roi_filtered, roi_filtered, mask=mask_roi)
                         frame[ry:ry + rh, rx:rx + rw] = cv2.add(bg_roi, fg_roi)
 
-                    # Jika 3D Mode & 2 Tangan: Gambar Wireframe 3D Prisma Berkedalaman Nyata
-                    if len(hand_lm_list) >= 2 and "3D" in current_mode:
+                    # Visualisasi Lensa: MODE 3D vs MODE 2D
+                    if is_3d_mode and len(hand_lm_list) >= 2:
+                        # Render Wireframe 3D Prisma Berkedalaman Nyata
                         draw_3d_wireframe_portal(frame, h1_tips, h2_tips, h1_z, h2_z, hull)
                     else:
-                        # Garis Border Putih Tebal Bersih di Sekeliling Polygon
-                        cv2.polylines(frame, [hull], isClosed=True, color=(255, 255, 255), thickness=3, lineType=cv2.LINE_AA)
+                        # MODE 1 (2D PERSEGI PANJANG): Garis Border Bersih Rapi + 4 Node Emas
+                        cv2.polylines(frame, [hull], isClosed=True, color=(10, 220, 255), thickness=5, lineType=cv2.LINE_AA)
+                        cv2.polylines(frame, [hull], isClosed=True, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
                         for pt in hull:
-                            cv2.circle(frame, tuple(pt[0]), 7, (10, 220, 255), -1, cv2.LINE_AA)
-                            cv2.circle(frame, tuple(pt[0]), 4, (255, 255, 255), -1, cv2.LINE_AA)
+                            cv2.circle(frame, tuple(pt[0]), 8, (10, 220, 255), -1, cv2.LINE_AA)
+                            cv2.circle(frame, tuple(pt[0]), 5, (255, 255, 255), -1, cv2.LINE_AA)
+                            cv2.circle(frame, tuple(pt[0]), 10, (255, 255, 255), 1, cv2.LINE_AA)
 
         # Gambar Header Teks RetroLens TikTok di Pojok Kiri Atas
-        draw_tiktok_retrolens_header(frame, current_mode, FILTER_NAMES[current_filter_idx], fps)
+        draw_tiktok_retrolens_header(frame, MODES[current_mode_idx], FILTER_NAMES[current_filter_idx], fps)
 
         # Tampilkan Jendela Kamera
         cv2.imshow("RETROLENS Pake Python", frame)
@@ -682,9 +702,9 @@ def main():
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q') or key == 27:
             break
-        elif key == ord('c') or key == ord('C'):
-            current_mode = "2D (Jempol-Telunjuk)" if "3D" in current_mode else "3D (Full 5 Jari)"
-            set_toast(f"Mode: {current_mode}")
+        elif key == ord('m') or key == ord('M') or key == ord('c') or key == ord('C'):
+            current_mode_idx = (current_mode_idx + 1) % len(MODES)
+            set_toast(f"Mode: {MODES[current_mode_idx]}")
         elif key == ord('n') or key == ord('N') or key == ord(' ') or key == 9:
             current_filter_idx = (current_filter_idx + 1) % len(FILTER_NAMES)
             set_toast(f"Filter: {FILTER_NAMES[current_filter_idx]}")

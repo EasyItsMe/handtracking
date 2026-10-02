@@ -4,24 +4,14 @@ Aplikasi filter AR interaktif berbasis gestur tangan menggunakan **OpenCV** dan 
 
 ---
 
-## 📸 Fitur Utama Sesuai Video:
+## 📸 2 Pilihan Mode Portal Lensa:
 
-1. **Portal 3D Lensa (Full 5 Jari)**:
-   - Menghubungkan seluruh 10 ujung jari dari kedua tangan membentuk portal prisma 3D AR transparan dengan garis penghubung antar-jari.
-   - Dilengkapi garis batas putih bersih *(White Clean Border)* dan simpul bercahaya emas.
-2. **Skeleton Tangan Emas *(Golden Hands)***:
-   - Garis sendi dan titik ujung jari digambar dengan warna emas elegan dan inti putih persis di video.
-3. **Filter Visual Identik**:
-   - **PIXELATE**: Efek mozaik retro + glitch baris atas.
-   - **CARTOON (RAINBOW WAVE)**: Gelombang pelangi diagonal animasi persis gambar kedua.
-   - **DUAL-TONE (POP ART)**: Kuantisasi warna cerah (Cyan, Magenta, Kuning, Oranye) persis gambar ketiga.
-   - **SKETCH**: Sketsa pensil + glitch strip atas persis gambar keempat.
-   - **RGB GLITCH**: Efek distorsi chromatic aberration dinamis.
-   - **THERMAL (HEATMAP)**, **CYBERPUNK (NEON)**, **FROSTED GLASS**, **SEPIA**, & **INVERT (X-RAY)**.
-4. **Kontrol Gestur Tangan Alami**:
-   - **Ganti Filter**: Sentuh Ujung Jempol & Kelingking (`🤙`) ATAU Gestur OK Bersentuhan (`👌👌`).
-   - **Ganti Mode (3D ⟷ 2D)**: Tekan tombol `'c'` ATAU Kepalkan **KEDUA Tangan** bersamaan.
-   - **Fist Mode (`👊`)**: Kepalkan **SATU Tangan** untuk mengaktifkan **Layar Merah Membara** dan memutar audio `lawan.wav`.
+1. **MODE 1: 2D (4 Titik Persegi Panjang)**:
+   - Menggunakan **4 titik saja** (Jempol & Telunjuk dari kedua tangan: *Thumb 1, Index 1, Index 2, Thumb 2*).
+   - Membentuk portal bingkai persegi panjang yang bersih, rapi, dan minimalis dengan 4 node emas di sudut dan border glow.
+2. **MODE 2: 3D (Prisma 5 Jari)**:
+   - Menghubungkan seluruh **10 ujung jari** dari kedua tangan membentuk prisma 3D AR holografis.
+   - Dilengkapi *Longitudinal Ribs*, *X-Cross Lattice Mesh*, cincin penampang kedalaman (*Spatial Depth Rings*), pencahayaan vertikal gradien 3D (Cyan atas ➔ Magenta lantai bawah), dan skala node berbasis Z-depth.
 
 ---
 
@@ -29,11 +19,11 @@ Aplikasi filter AR interaktif berbasis gestur tangan menggunakan **OpenCV** dan 
 
 | Aksi | Gestur Tangan | Shortcut Keyboard |
 | :--- | :--- | :--- |
-| **Ganti Filter Berikutnya** | Sentuh Jempol - Kelingking / OK (`👌👌`) | `n`, `SPACE`, `TAB` |
+| **Ganti Mode (2D ⟷ 3D)** | Kepalkan KEDUA Tangan bersamaan | `m` atau `c` |
+| **Ganti Filter Berikutnya** | Sentuh Jempol - Kelingking (`🤙`) / OK (`👌👌`) | `n`, `SPACE`, `TAB` |
 | **Ganti Filter Sebelumnya** | - | `p` |
 | **Pilih Filter Langsung** | - | Angka `1` s/d `0` |
-| **Ganti Mode (3D / 2D)** | Kepalkan Kedua Tangan | `c` |
-| **Layar Merah + Suara** | Kepalkan 1 Tangan (`👊`) | - |
+| **Fist Mode (Layar Merah + Suara)** | Kepalkan SATU Tangan (`👊`) | - |
 | **Keluar Aplikasi** | - | `q` atau `ESC` |
 
 ---
