@@ -91,10 +91,9 @@ def play_lawan_sound():
 # =====================================================================
 def is_hand_fist(hand_lm):
     """
-    Mendeteksi apakah tangan benar-benar mengepal (Fist 👊) secara presisi:
-    - Ke-4 jari (Telunjuk, Tengah, Manis, Kelingking) HARUS terlipat erat ke telapak.
-    - Ujung tiap jari harus lebih dekat ke pergelangan tangan (wrist) daripada sendi PIP dan MCP.
-    - Ibu jari tidak boleh terentang bebas.
+    Mendeteksi apakah tangan sedang mengepal (Fist 👊):
+    - Ujung jari (8, 12, 16, 20) terlipat ke arah pergelangan / telapak tangan.
+    - Ibu jari tidak terentang bebas.
     """
     wrist = hand_lm[0]
     
@@ -112,17 +111,17 @@ def is_hand_fist(hand_lm):
         d_pip = math.hypot(hand_lm[pip_idx].x - wrist.x, hand_lm[pip_idx].y - wrist.y)
         d_mcp = math.hypot(hand_lm[mcp_idx].x - wrist.x, hand_lm[mcp_idx].y - wrist.y)
 
-        # Ujung jari harus lebih pendek dibanding sendi PIP dan MCP secara tegas
-        if (d_tip < d_pip) and (d_tip < d_mcp * 0.88):
+        # Ujung jari lebih dekat dibanding sendi PIP dan MCP
+        if (d_tip < d_pip * 1.05) and (d_tip < d_mcp * 1.02):
             closed_count += 1
 
-    # Cek jempol agar tidak terentang
+    # Cek jempol agar tidak terentang keluar
     d_thumb_tip = math.hypot(hand_lm[4].x - wrist.x, hand_lm[4].y - wrist.y)
     d_thumb_mcp = math.hypot(hand_lm[2].x - wrist.x, hand_lm[2].y - wrist.y)
-    thumb_closed = (d_thumb_tip < d_thumb_mcp * 1.30)
+    thumb_closed = (d_thumb_tip < d_thumb_mcp * 1.38)
 
-    # Hanya bernilai True jika seluruh 4 jari terlipat erat (4/4) dan jempol menutup
-    return (closed_count == 4) and thumb_closed
+    # Minimal 3 dari 4 jari terlipat erat dan jempol menutup
+    return (closed_count >= 3) and thumb_closed
 
 
 def check_thumb_pinky_touch(hand_lm, w, h):
@@ -504,38 +503,55 @@ def main():
 
         hands_count = len(results.multi_hand_landmarks) if results.multi_hand_landmarks else 0
         fist_hands_count = 0
+        fist_centers = []
         hand_lm_list = []
 
         if results.multi_hand_landmarks:
             for hand_lm in results.multi_hand_landmarks:
                 hand_lm_list.append(hand_lm.landmark)
+                wrist = hand_lm.landmark[0]
+                mid_mcp = hand_lm.landmark[9]
+                center_pt = (int((wrist.x + mid_mcp.x) * 0.5 * w), int((wrist.y + mid_mcp.y) * 0.5 * h))
+
                 if is_hand_fist(hand_lm.landmark):
                     fist_hands_count += 1
+                    fist_centers.append(center_pt)
 
-        # Hitung streak frame agar stabil dan tidak terlalu sensitif
-        if fist_hands_count == 2:
+        # Hitung streak frame agar stabil dan responsif
+        if fist_hands_count >= 2:
             fist_streak_double += 1
             fist_streak_single = 0
         elif fist_hands_count == 1:
-            fist_streak_single += 1
+            # Cegah trigger single fist jika sebenarnya sedang ada 2 tangan di layar
+            if hands_count == 1 or fist_streak_single > 2:
+                fist_streak_single += 1
+            else:
+                fist_streak_single = 0
             fist_streak_double = 0
         else:
             fist_streak_single = 0
             fist_streak_double = 0
 
         # =============================================================
-        # 1. KONDISI: KEPAL KEDUA TANGAN (TOGGLE MODE 2D / 3D)
+        # 1. KONDISI: KEPAL KEDUA TANGAN (TOGGLE MODE 2D / 3D) 👊👊
         # =============================================================
-        if fist_streak_double >= 3:
-            if curr_time - last_mode_toggle_time > 1.2:
+        if fist_streak_double >= 2:
+            # Gambar Lingkaran Efek Aura pada Kedua Kepalan Tangan
+            for f_pt in fist_centers:
+                cv2.circle(frame, f_pt, 35, (10, 220, 255), 3, cv2.LINE_AA)
+                cv2.circle(frame, f_pt, 45, (255, 255, 255), 2, cv2.LINE_AA)
+            if len(fist_centers) >= 2:
+                cv2.line(frame, fist_centers[0], fist_centers[1], (0, 240, 255), 3, cv2.LINE_AA)
+
+            if curr_time - last_mode_toggle_time > 1.0:
                 last_mode_toggle_time = curr_time
                 current_mode_idx = (current_mode_idx + 1) % len(MODES)
-                set_toast(f"🔄 MODE: {MODES[current_mode_idx]}", 1.8)
+                set_toast(f"🔄 MODE BERUBAH: {MODES[current_mode_idx]} ✨", 2.2)
 
         # =============================================================
         # 2. KONDISI: SATU TANGAN MENGEPAL (FIST 👊) -> LAYAR MERAH + SUARA
         # =============================================================
-        elif fist_streak_single >= 3:
+        elif fist_streak_single >= 3 and hands_count == 1:
             if not is_fist_prev:
                 play_lawan_sound()
                 set_toast("👊 FIST / RAGE MODE AKTIF!", 1.5)
